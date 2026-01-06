@@ -94,8 +94,15 @@ class InstaVMREPL(IsolatedEnv):
             import os
             api_key = os.getenv("INSTAVM_API_KEY")
 
-        if api_key:
-            init_kwargs["api_key"] = api_key
+        if not api_key:
+            raise ValueError(
+                "InstaVM API key not found. Please either:\n"
+                "  1. Pass api_key in environment_kwargs: RLM(..., environment_kwargs={'api_key': 'your-key'})\n"
+                "  2. Set INSTAVM_API_KEY environment variable\n"
+                "Get your API key at https://instavm.io"
+            )
+
+        init_kwargs["api_key"] = api_key
 
         if self.base_url:
             init_kwargs["base_url"] = self.base_url
