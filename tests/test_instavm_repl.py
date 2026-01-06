@@ -67,8 +67,14 @@ class TestInstaVMREPLMocked:
 
     def test_interface_compliance(self):
         """Verify the class matches the required project structure."""
+        import importlib
+        # Reload modules to get fresh classes after test_imports deletes them from sys.modules
+        import rlm.environments.base_env
+        instavm_repl_module = importlib.import_module('rlm.environments.instavm_repl')
+        importlib.reload(rlm.environments.base_env)
+        importlib.reload(instavm_repl_module)
         from rlm.environments.base_env import IsolatedEnv
-        assert issubclass(InstaVMREPL, IsolatedEnv)
+        assert issubclass(instavm_repl_module.InstaVMREPL, IsolatedEnv)
 
 # =================================================================
 # SECTION 2: REAL INTEGRATION TESTS (The "Safety Net")
