@@ -88,8 +88,14 @@ class InstaVMREPL(IsolatedEnv):
             "timeout": self.timeout,
         }
 
-        if self.api_key:
-            init_kwargs["api_key"] = self.api_key
+        # Get API key from parameter or environment variable
+        api_key = self.api_key
+        if not api_key:
+            import os
+            api_key = os.getenv("INSTAVM_API_KEY")
+
+        if api_key:
+            init_kwargs["api_key"] = api_key
 
         if self.base_url:
             init_kwargs["base_url"] = self.base_url
@@ -272,7 +278,7 @@ def FINAL_VAR(variable_name):
 # Update _locals with newly created variables
 import inspect
 frame = inspect.currentframe()
-for k, v in frame.f_locals.items():
+for k, v in list(frame.f_locals.items()):
     if not k.startswith('_') and k not in ['json', 'httpx', 'llm_query', 'llm_query_batched', 'FINAL_VAR', 'inspect', 'code']:
         _locals[k] = v
 '''
