@@ -1,5 +1,5 @@
 """
-InstaVM REPL example with code execution and LLM queries.
+InstaVM REPL example with code execution.
 
 Setup:
     1. Install instavm: uv add instavm
@@ -10,31 +10,12 @@ InstaVM provides fast Firecracker microVMs with stateful execution.
 """
 
 import os
-from rlm.clients.base_lm import BaseLM
-from rlm.core.lm_handler import LMHandler
-from rlm.core.types import ModelUsageSummary, UsageSummary
 from rlm.environments.instavm_repl import InstaVMREPL
 
 
-class MockLM(BaseLM):
-    def __init__(self):
-        super().__init__(model_name="mock")
-
-    def completion(self, prompt):
-        return f"Mock: {str(prompt)[:50]}"
-
-    async def acompletion(self, prompt):
-        return self.completion(prompt)
-
-    def get_usage_summary(self):
-        return UsageSummary({"mock": ModelUsageSummary(1, 10, 10)})
-
-    def get_last_usage(self):
-        return self.get_usage_summary()
-
-
 def main():
-    if not os.getenv("INSTAVM_API_KEY"):
+    api_key = os.getenv("INSTAVM_API_KEY")
+    if not api_key:
         print("Error: INSTAVM_API_KEY environment variable not set")
         print("Set it with: export INSTAVM_API_KEY=...")
         return
@@ -43,9 +24,9 @@ def main():
     print("InstaVM REPL Example")
     print("=" * 50)
 
-    # Basic execution (no LLM)
+    # Basic execution
     print("\n[1] Basic code execution")
-    with InstaVMREPL(timeout=30) as repl:
+    with InstaVMREPL(api_key=api_key, timeout=30) as repl:
         result = repl.execute_code("x = 1 + 2")
         print(f"  x = 1 + 2 → locals: {result.locals}")
 
@@ -57,27 +38,17 @@ def main():
         result = repl.execute_code("print(y)")
         print(f"  State persists → y = {result.stdout.strip()}")
 
-    # With LLM handler
-    print("\n[2] With LLM handler")
-    with LMHandler(client=MockLM()) as handler:
-        print(f"  Handler at {handler.address}")
+        # Test complex operations
+        result = repl.execute_code("total = sum([i**2 for i in range(10)])")
+        result = repl.execute_code("print(total)")
+        print(f"  Sum of squares → {result.stdout.strip()}")
 
-        with InstaVMREPL(
-            timeout=30,
-            lm_handler_address=handler.address
-        ) as repl:
-            result = repl.execute_code('r = llm_query("Hello!")')
-            print(f"  llm_query → stderr: {result.stderr or '(none)'}")
-
-            result = repl.execute_code("print(r)")
-            print(f"  Response: {result.stdout.strip()}")
-
-            result = repl.execute_code('rs = llm_query_batched(["Q1", "Q2"])')
-            result = repl.execute_code("print(len(rs))")
-            print(f"  Batched count: {result.stdout.strip()}")
-
-            result = repl.execute_code('print(FINAL_VAR("rs"))')
-            print(f"  FINAL_VAR: {result.stdout.strip()}")
+    # Test with context loading
+    print("\n[2] Context loading")
+    with InstaVMREPL(api_key=api_key, timeout=30) as repl:
+        repl.load_context({"name": "InstaVM", "speed": "fast"})
+        result = repl.execute_code("print(f'Context: {context}')")
+        print(f"  Loaded context → {result.stdout.strip()}")
 
     print("\n" + "=" * 50)
     print("Done!")
