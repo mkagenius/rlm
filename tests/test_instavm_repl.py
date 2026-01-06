@@ -1,6 +1,8 @@
 import os
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
+
 from rlm.environments.instavm_repl import InstaVMREPL
 
 # =================================================================
@@ -8,13 +10,14 @@ from rlm.environments.instavm_repl import InstaVMREPL
 # 12 Tests - 0 VMs used. Runs instantly without an API Key.
 # =================================================================
 
+
 class TestInstaVMREPLMocked:
     """Verifies all logic, persistence, and helpers using mocks."""
 
     @pytest.fixture
     def mock_env(self):
         """Standard Mocking setup."""
-        with patch('rlm.environments.instavm_repl.InstaVM') as mock_class:
+        with patch("rlm.environments.instavm_repl.InstaVM") as mock_class:
             mock_inst = mock_class.return_value
             repl = InstaVMREPL(api_key="fake_key")
             yield repl, mock_inst
@@ -58,8 +61,7 @@ class TestInstaVMREPLMocked:
 
     def test_context_manager_cleanup(self):
         """Test that the 'with' statement closes the client."""
-        with patch('rlm.environments.instavm_repl.InstaVM') as mock_class:
-            mock_inst = mock_class.return_value
+        with patch("rlm.environments.instavm_repl.InstaVM"):
             with InstaVMREPL(api_key="fake") as repl:
                 pass
             # InstaVMREPL uses cleanup() not close()
@@ -68,18 +70,23 @@ class TestInstaVMREPLMocked:
     def test_interface_compliance(self):
         """Verify the class matches the required project structure."""
         import importlib
+
         # Reload modules to get fresh classes after test_imports deletes them from sys.modules
         import rlm.environments.base_env
-        instavm_repl_module = importlib.import_module('rlm.environments.instavm_repl')
+
+        instavm_repl_module = importlib.import_module("rlm.environments.instavm_repl")
         importlib.reload(rlm.environments.base_env)
         importlib.reload(instavm_repl_module)
         from rlm.environments.base_env import IsolatedEnv
+
         assert issubclass(instavm_repl_module.InstaVMREPL, IsolatedEnv)
+
 
 # =================================================================
 # SECTION 2: REAL INTEGRATION TESTS (The "Safety Net")
 # 4 Tests - Uses 1 VM slot. Proves the service is actually alive.
 # =================================================================
+
 
 @pytest.fixture(scope="session")
 def real_repl():
@@ -87,10 +94,11 @@ def real_repl():
     api_key = os.getenv("INSTAVM_API_KEY")
     if not api_key:
         pytest.skip("No API key: Skipping real-world verification.")
-    
+
     repl_instance = InstaVMREPL(api_key=api_key, timeout=300)
     yield repl_instance
     repl_instance.cleanup()
+
 
 @pytest.mark.skipif(not os.getenv("INSTAVM_API_KEY"), reason="API Key required")
 class TestInstaVMRealService:

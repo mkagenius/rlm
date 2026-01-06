@@ -7,18 +7,14 @@ Provides stateful execution between code blocks.
 
 import json
 import time
-from typing import Any
 
-from rlm.core.comms_utils import LMRequest, send_lm_request, send_lm_request_batched
 from rlm.core.types import REPLResult, RLMChatCompletion
 from rlm.environments.base_env import IsolatedEnv
 
 try:
     from instavm import InstaVM
-except ImportError:
-    raise ImportError(
-        "InstaVM is not installed. Install it with: pip install instavm"
-    )
+except ImportError as e:
+    raise ImportError("InstaVM is not installed. Install it with: pip install instavm") from e
 
 
 class InstaVMREPL(IsolatedEnv):
@@ -92,6 +88,7 @@ class InstaVMREPL(IsolatedEnv):
         api_key = self.api_key
         if not api_key:
             import os
+
             api_key = os.getenv("INSTAVM_API_KEY")
 
         if not api_key:
@@ -185,10 +182,15 @@ class InstaVMREPL(IsolatedEnv):
                     timeout=10,
                 )
                 if dump_result:
-                    dump_data = dump_result.get("stdout", "") if isinstance(dump_result, dict) else str(dump_result)
+                    dump_data = (
+                        dump_result.get("stdout", "")
+                        if isinstance(dump_result, dict)
+                        else str(dump_result)
+                    )
                     # Extract JSON from output (it might be mixed with other text)
                     import re
-                    json_match = re.search(r'\{[^{}]*\}', dump_data)
+
+                    json_match = re.search(r"\{[^{}]*\}", dump_data)
                     if json_match:
                         locals_dict = json.loads(json_match.group())
             except Exception:
